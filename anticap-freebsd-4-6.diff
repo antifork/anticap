@@ -1,5 +1,5 @@
---- if_ether.c.orig	Thu Aug  8 23:58:23 2002
-+++ if_ether.c	Thu Aug  8 14:31:11 2002
+--- netinet/if_ether.c.orig	Thu Aug  8 23:58:23 2002
++++ netinet/if_ether.c	Thu Aug  8 14:31:11 2002
 @@ -81,6 +81,7 @@
  static int arpt_prune = (5*60*1); /* walk list every 5 minutes */
  static int arpt_keep = (20*60); /* once resolved, good for 20 more minutes */
