@@ -1,0 +1,70 @@
+--- netinet/if_arp.c.orig	Thu Aug  8 23:44:27 2002
++++ netinet/if_arp.c	Thu Aug  8 23:43:17 2002
+@@ -157,6 +157,9 @@
+ int	useloopback = 1;	/* use loopback interface for local traffic */
+ int	arpinit_done = 0;
+ 
++/* for arp poisoning protection (sysctl variable) */
++int arp_denypoisoning = 1;
++
+ struct	callout arptimer_ch;
+ 
+ /* revarp state */
+@@ -798,6 +801,14 @@
+ 				    lla_snprintf(ar_sha(ah), ah->ar_hln),
+ 				    ifp->if_xname, in_fmtaddr(isaddr),
+ 				    rt->rt_ifp->if_xname);
++					goto out;
++			} else if (arp_denypoisoning) {
++				log(LOG_INFO,
++					"%s on %s tried to overwrite "
++					"arp info for %s on %s using arp poisoning\n",
++					lla_snprintf(ar_sha(ah), ah->ar_hln),
++					ifp->if_xname, in_fmtaddr(isaddr),
++					rt->rt_ifp->if_xname);
+ 					goto out;
+ 			} else {
+ 				log(LOG_INFO,
+--- netinet/in.h.orig	Thu Aug  8 23:45:35 2002
++++ netinet/in.h	Thu Aug  8 23:42:12 2002
+@@ -349,7 +349,8 @@
+ #define IPCTL_LOWPORTMAX       17	/* maximum reserved port */
+ #define IPCTL_MAXFRAGPACKETS   18	/* max packets in reassembly queue */
+ #define	IPCTL_GRE_TTL          19	/* default TTL for gre encap packet */
+-#define	IPCTL_MAXID	       20
++#define IPCTL_ARPDENYPOISONING	20
++#define	IPCTL_MAXID	       21
+ 
+ #define	IPCTL_NAMES { \
+ 	{ 0, 0 }, \
+@@ -372,6 +373,7 @@
+ 	{ "lowportmax", CTLTYPE_INT }, \
+ 	{ "maxfragpackets", CTLTYPE_INT }, \
+ 	{ "grettl", CTLTYPE_INT }, \
++	{ "denyarppoisoning", CTLTYPE_INT }, \
+ }
+ #endif /* !_XOPEN_SOURCE */
+ 
+--- netinet/ip_input.c.orig	Thu Aug  8 23:44:49 2002
++++ netinet/ip_input.c	Thu Aug  8 23:42:36 2002
+@@ -1813,6 +1813,10 @@
+ 	case IPCTL_MAXFRAGPACKETS:
+ 		return (sysctl_int(oldp, oldlenp, newp, newlen,
+ 		    &ip_maxfragpackets));
++	case IPCTL_ARPDENYPOISONING:
++		return (sysctl_int(oldp, oldlenp, newp, newlen,
++			&arp_denypoisoning));
++
+ 	default:
+ 		return (EOPNOTSUPP);
+ 	}
+--- netinet/ip_var.h.orig	Thu Aug  8 23:44:08 2002
++++ netinet/ip_var.h	Thu Aug  8 23:43:53 2002
+@@ -190,6 +190,7 @@
+ extern int   anonportmax;		/* maximum ephemeral port */
+ extern int   lowportmin;		/* minimum reserved port */
+ extern int   lowportmax;		/* maximum reserved port */
++extern int   arp_denypoisoning;
+ extern struct rttimer_queue *ip_mtudisc_timeout_q;
+ #ifdef GATEWAY
+ extern int ip_maxflows;
