@@ -1,0 +1,37 @@
+--- if_ether.c.orig	Thu Aug  8 23:58:23 2002
++++ if_ether.c	Thu Aug  8 14:31:11 2002
+@@ -81,6 +81,7 @@
+ static int arpt_prune = (5*60*1); /* walk list every 5 minutes */
+ static int arpt_keep = (20*60); /* once resolved, good for 20 more minutes */
+ static int arpt_down = 20;	/* once declared down, don't send for 20 sec */
++static int arpt_nopoison = 1;
+ 
+ SYSCTL_INT(_net_link_ether_inet, OID_AUTO, prune_intvl, CTLFLAG_RW,
+ 	   &arpt_prune, 0, "");
+@@ -88,6 +89,8 @@
+ 	   &arpt_keep, 0, "");
+ SYSCTL_INT(_net_link_ether_inet, OID_AUTO, host_down_time, CTLFLAG_RW,
+ 	   &arpt_down, 0, "");
++SYSCTL_INT(_net_link_ether_inet, OID_AUTO, deny_arp_poisoning, CTLFLAG_RW,
++	   &arpt_nopoison, 0, "deny arp poisoning");
+ 
+ #define	rt_expire rt_rmx.rmx_expire
+ 
+@@ -665,7 +668,16 @@
+ 		}
+ 		if (sdl->sdl_alen &&
+ 		    bcmp(ar_sha(ah), LLADDR(sdl), sdl->sdl_alen)) {
+-			if (rt->rt_expire)
++			if (arpt_nopoison)
++			{
++			    log(LOG_INFO, "arp: %s attempts to poison ARP table moving %*D to %*D on %s%d\n",
++				inet_ntoa(isaddr),
++				ifp->if_addrlen, (u_char *)LLADDR(sdl), ":",
++				ifp->if_addrlen, (u_char *)ar_sha(ah), ":",
++				ifp->if_name, ifp->if_unit);
++			    goto reply;
++			}
++			else if (rt->rt_expire)
+ 			    log(LOG_INFO, "arp: %s moved from %*D to %*D on %s%d\n",
+ 				inet_ntoa(isaddr),
+ 				ifp->if_addrlen, (u_char *)LLADDR(sdl), ":",
