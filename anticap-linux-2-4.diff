@@ -1,0 +1,60 @@
+--- net/core/neighbour.c.orig	2002-08-08 23:54:36.000000000 +0200
++++ net/core/neighbour.c	2002-08-08 23:54:29.000000000 +0200
+@@ -55,6 +55,8 @@
+ static int neigh_glbl_allocs;
+ static struct neigh_table *neigh_tables;
+ 
++static int sysctl_neigh_arp_deny_poisoning = 1;
++
+ #if defined(__i386__) && defined(CONFIG_SMP)
+ #define ASSERT_WL(n) if ((int)((n)->lock.lock) > 0) { printk("WL assertion failed at " __FILE__ "(%d):" __FUNCTION__ "\n", __LINE__); }
+ #else
+@@ -805,11 +807,18 @@
+ 		/* The second case: if something is already cached
+ 		   and a new address is proposed:
+ 		   - compare new & old
+-		   - if they are different, check override flag
++		   - if they are different, and we are dealing with
++		     ARP packets, and the sysctl says we want to
++		     suppress ARP poisonings, bail and go out
++		   - finally, always if they are different, check override flag
+ 		 */
+ 		if (old&NUD_VALID) {
+ 			if (memcmp(lladdr, neigh->ha, dev->addr_len) == 0)
+ 				lladdr = neigh->ha;
++			else if (arp && sysctl_neigh_arp_deny_poisoning) {
++				printk(KERN_WARNING "negated possible arp poisoning");
++				goto out;
++			}
+ 			else if (!override)
+ 				goto out;
+ 		}
+@@ -1443,7 +1452,7 @@
+ struct neigh_sysctl_table
+ {
+ 	struct ctl_table_header *sysctl_header;
+-	ctl_table neigh_vars[17];
++	ctl_table neigh_vars[18];
+ 	ctl_table neigh_dev[2];
+ 	ctl_table neigh_neigh_dir[2];
+ 	ctl_table neigh_proto_dir[2];
+@@ -1498,6 +1507,9 @@
+ 	{NET_NEIGH_GC_THRESH3, "gc_thresh3",
+          NULL, sizeof(int), 0644, NULL,
+          &proc_dointvec},
++	{NET_NEIGH_ARP_DENY_POISONING, "arp_deny_poisoning",
++	 &sysctl_neigh_arp_deny_poisoning, sizeof(int), 0644, NULL,
++	 &proc_dointvec},
+ 	 {0}},
+ 
+ 	{{NET_PROTO_CONF_DEFAULT, "default", NULL, 0, 0555, NULL},{0}},
+--- include/linux/sysctl.h.orig	2002-08-08 23:07:11.000000000 +0200
++++ include/linux/sysctl.h	2002-08-08 13:25:42.000000000 +0200
+@@ -387,6 +387,7 @@
+ 	NET_NEIGH_GC_THRESH1=14,
+ 	NET_NEIGH_GC_THRESH2=15,
+ 	NET_NEIGH_GC_THRESH3=16,
++	NET_NEIGH_ARP_DENY_POISONING=17
+ };
+ 
+ /* /proc/sys/net/ipx */
