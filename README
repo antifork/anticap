@@ -1,0 +1,64 @@
+- --------- anticap --
+
+anticap is a kernel patch for various operating systems (i mean: written for) that
+effectively makes ettercap (http://ettercap.sf.net) and other arp-poisoning based
+sniffers useless.
+
+a kernel patched with anticap uses a simple tecnique when dealing with arp replies:
+- if the entry doesn`t exist in the arp table, it inserts into the table
+- if the entry exitsts in the arp table, and the sysctl variable is set to `1', this
+  is almost certainly arp spoofing (sorry, you have to put the sysctl off before
+  changing a NIC :) and the packet is discarded and a diagnostic message bailed out
+  to syslogd
+
+- --------- installation -
+for linux 2.[24]= {
+    linux-box# cd /usr/src/linux
+    linux-box# patch -p0 < anticap-linux-2-[24].diff
+    linux-box# [ .. your usual kernel reconfiguration commands here .. ]
+    linux-box# reboot
+}
+
+for freebsd 4.6 [not tested previous releases, sorry]= {
+    bsd-box# cd /sys
+    bsd-box# patch < anticap-freebsd-4-6.diff
+    bsd-box# [ .. your usual kernel reconfiguration commands here .. ]
+    bsd-box# reboot
+}
+
+for netbsd 1.5.3 [not tested previous releases, sorry]= {
+    nbsd-box# cd /sys
+    nbsd-box# patch < anticap-freebsd-1-5-3.diff
+    nbsd-box# [ .. your usual kernel reconfiguration commands here .. ]
+    nbsd-box# cd /usr/src/sbin/sysctl
+    nbsd-box# make clean all install
+    nbsd-box# reboot
+}
+
+- --------- usage -
+when you reboot, no leet messages will be displayed, just a new sysctl that enables/
+disables anticap.
+
+on a netbsd box you`ll see:
+    bsd-box# sysctl -a | grep arp
+    net.inet.ip.denyarppoisoning = 1
+    bsd-box#
+
+on a freebsd box:
+    bsd-box# sysctl -a | grep deny_arp
+    net.link.ether.inet.deny_arp_poisoning: 1
+    bsd-box#
+
+on a linux (2.2 or 2.4) box:
+    linux-box# sysctl -a | grep arp_deny
+    net/ipv6/neigh/default/arp_deny_poisoning = 1
+    net/ipv4/neigh/default/arp_deny_poisoning = 1
+    linux-box#
+
+names are different to comply with os-specific sysctl names .. i tried to give variables
+names the most similar to the existing ones.
+
+sorry to ettercap developers ..
+
+cheers, 
+    vjt <vjt@azzurra.org>
