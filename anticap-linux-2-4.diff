@@ -23,7 +23,7 @@
  			if (memcmp(lladdr, neigh->ha, dev->addr_len) == 0)
  				lladdr = neigh->ha;
 +			else if (arp && sysctl_neigh_arp_deny_poisoning) {
-+				printk(KERN_WARNING "negated possible arp poisoning");
++				printk(KERN_WARNING "negated possible arp poisoning\n");
 +				goto out;
 +			}
  			else if (!override)
