@@ -1,5 +1,5 @@
---- netinet/if_ether.c.orig	Thu Aug  8 23:58:23 2002
-+++ netinet/if_ether.c	Thu Aug  8 14:31:11 2002
+--- if_ether.c.orig	Thu Aug  8 23:58:23 2002
++++ if_ether.c	Fri Aug  9 15:20:39 2002
 @@ -81,6 +81,7 @@
  static int arpt_prune = (5*60*1); /* walk list every 5 minutes */
  static int arpt_keep = (20*60); /* once resolved, good for 20 more minutes */
@@ -17,14 +17,15 @@
  
  #define	rt_expire rt_rmx.rmx_expire
  
-@@ -665,7 +668,16 @@
+@@ -665,7 +668,17 @@
  		}
  		if (sdl->sdl_alen &&
  		    bcmp(ar_sha(ah), LLADDR(sdl), sdl->sdl_alen)) {
 -			if (rt->rt_expire)
 +			if (arpt_nopoison)
 +			{
-+			    log(LOG_INFO, "arp: %s attempts to poison ARP table moving %*D to %*D on %s%d\n",
++			    log(LOG_INFO, "arp: %*D attempts to poison ARP table moving %s from %*D to %*D on %s%d\n",
++				ifp->if_addrlen, (u_char *)ar_sha(ah), ":",
 +				inet_ntoa(isaddr),
 +				ifp->if_addrlen, (u_char *)LLADDR(sdl), ":",
 +				ifp->if_addrlen, (u_char *)ar_sha(ah), ":",
