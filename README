@@ -28,7 +28,7 @@ for freebsd 4.6 [not tested previous releases, sorry]= {
 
 for netbsd 1.5.3 [not tested previous releases, sorry]= {
     nbsd-box# cd /sys
-    nbsd-box# patch < anticap-freebsd-1-5-3.diff
+    nbsd-box# patch < anticap-netbsd-1-5-3.diff
     nbsd-box# cd netinet
     nbsd-box# make includes
     nbsd-box# [ .. your usual kernel reconfiguration commands here .. ]
